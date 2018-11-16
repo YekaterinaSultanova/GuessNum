@@ -1,14 +1,20 @@
 package com.company;
 
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.*;
 
 public class Main {
     static Scanner scan = new Scanner(System.in);
     static Random rand = new Random();
     static List<GameResult> results = new ArrayList<>(); // ArrayList<>() = ArrayList<GameResult>()
+    public static final File RESULTS_FILE = new File("results.txt");
 
     public static void main(String[] args) {
+        loadResults();
+
         do {
             System.out.println("What is your name?");
             String name = scan.next();
@@ -17,7 +23,7 @@ public class Main {
 
             int myNum = rand.nextInt(10) + 1;
             long t1 = System.currentTimeMillis();
-            for (int i = 0; i <= 10; i++) {
+            for (int i = 1; i <= 10; i++) {
                 int userNum = readUserNum();
                 if (myNum == userNum) {
                     System.out.println("You are WINNER, my number is " + myNum);
@@ -36,13 +42,24 @@ public class Main {
             System.out.println("Wanna play again?");
         } while ("y".equals(scan.next()));
 
-        for (GameResult r : results) {
-            System.out.println("Player $s has done %d tries and it took $.2f sec\n"),
-                    r.name,
-                    r.triesCount,
-                    r.duration / 1000.0);
-        }
+
+        showResults();
+        saveResults();
     }
+
+    private static void showResults() {
+        results.stream()
+                .sorted(Comparator.<GameResult>comparingInt(r-> r.triesCount)
+                                  .thenComparingLong(r -> r.duration))
+
+                .limit(3)
+                .forEach(r-> System.out.printf("Player %s has done %d tries and it took %.2f sec\n",
+                        r.name,
+                        r.triesCount,
+                        r.duration / 1000.0));
+        }
+
+
 
     private static int readUserNum() {
         while (true) {
@@ -61,6 +78,38 @@ public class Main {
             }
         }
     }
+
+    private static void saveResults() {
+        try (PrintWriter fileOut = new PrintWriter(RESULTS_FILE)) {
+            int skipCount = results.size() - 5; //pervije 5 zapisej mi propuskajem
+            for (GameResult r : results) {
+                if (skipCount <= 0) {
+                    fileOut.printf("%s %d %d\n", r.name, r.triesCount, r.duration);
+
+                }
+                skipCount--; //umenwaem skipcount na 1
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void loadResults() {
+        try (Scanner in = new Scanner(RESULTS_FILE)) {
+            while (in.hasNext()) {
+
+                GameResult gr = new GameResult();
+                gr.name = in.next();
+                gr.triesCount = in.nextInt();
+                gr.duration = in.nextLong();
+                results.add(gr);
+            }
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
 }
+
 
 
